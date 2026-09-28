@@ -229,6 +229,10 @@ class CameraManager:
                     if cam_idx > 10:
                         self.status = "DISCONNECTED" if self.is_running else "OFFLINE"
                         return False
+                    # On headless Linux cloud environments (e.g. Render), skip probe if device node doesn't exist
+                    if os.name != "nt" and not os.path.exists(f"/dev/video{cam_idx}"):
+                        self.status = "DISCONNECTED" if self.is_running else "OFFLINE"
+                        return False
                     try:
                         # On Windows, DirectShow (CAP_DSHOW) avoids MSMF error -1072873822
                         self._cap = cv2.VideoCapture(cam_idx, cv2.CAP_DSHOW)

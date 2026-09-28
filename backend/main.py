@@ -28,9 +28,9 @@ async def lifespan(app: FastAPI):
         ws_manager.set_event_loop(asyncio.get_running_loop())
     except Exception:
         pass
-    # Pre-warm default camera
-    get_or_create_default_camera()
-    print("[Xynapse] Surveillance Platform Online.")
+    # Pre-warm default camera in background so Uvicorn opens port immediately
+    asyncio.create_task(asyncio.to_thread(get_or_create_default_camera))
+    print("[Xynapse] Surveillance Platform Online - Port Open.")
 
     # Secret hygiene check for local edge deployment
     if settings.INTERNAL_WORKER_SECRET == "xynapse-internal-worker-auth-key-2026":
