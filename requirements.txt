@@ -15,7 +15,7 @@ pydantic-settings>=2.1.0
 sqlalchemy>=2.0.0
 
 # Computer Vision & Deep Learning (YuNet, SFace, OpenCV Pipeline)
-opencv-python>=4.8.0
+opencv-python-headless>=4.8.0
 numpy>=1.26.0
 
 # Object Detection & Tracking (YOLOv8 Sentry)
