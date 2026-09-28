@@ -725,6 +725,10 @@ class CameraManager:
                             self._latest_hardware_frame = frame
                             self._latest_hardware_frame_time = time.time()
                     else:
+                        # If a local video file reaches EOF, loop back to frame 0
+                        src_str = str(self.source).strip()
+                        if not src_str.isdigit() and not src_str.startswith(("rtsp://", "rtsps://", "http://", "https://")):
+                            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                         time.sleep(0.005)
                 except Exception:
                     time.sleep(0.01)
