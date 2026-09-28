@@ -1,0 +1,107 @@
+{
+  "failure_recovery": {
+    "1_rtsp_disconnect": {
+      "opened": false,
+      "status": "OFFLINE",
+      "handled_gracefully": true,
+      "fallback_frame_available": true
+    },
+    "2_camera_manager_restart": {
+      "started": true,
+      "stopped": true,
+      "thread_cleaned": true
+    },
+    "3_db_restart_recovery": {
+      "pool_disposed_and_recovered": true,
+      "query_succeeded": true
+    },
+    "4_internet_disconnected": {
+      "sync_status": "SYNC_FAILED",
+      "event_retained_in_sqlite": true,
+      "record_status": "PENDING",
+      "attempt_incremented": true,
+      "next_retry_backoff_set": true
+    },
+    "5_internet_restored": {
+      "ingest_http_code": 200,
+      "event_marked_synced": true,
+      "remote_id_assigned": true
+    },
+    "6_hq_idempotency": {
+      "first_submission_code": 200,
+      "duplicate_submission_code": 200,
+      "duplicate_flag": true,
+      "no_duplicate_corruption": true
+    },
+    "7_outbox_survives_restart": {
+      "record_recovered": true,
+      "status": "PENDING",
+      "payload_intact": true
+    },
+    "8_camera_disappear_tracking": {
+      "track_id": 1,
+      "track_preserved_across_5_empty_frames": true,
+      "max_missed_frames_tolerance": 15
+    },
+    "9_camera_config_persistence": {
+      "camera_reloaded": true,
+      "fence_points": [
+        [
+          0.1,
+          0.1
+        ],
+        [
+          0.9,
+          0.1
+        ],
+        [
+          0.9,
+          0.9
+        ],
+        [
+          0.1,
+          0.9
+        ]
+      ],
+      "fence_type": "POLYGON"
+    },
+    "10_disk_space_sanity": {
+      "evidence_dir_accessible": true,
+      "free_disk_gb": 72.17,
+      "sufficient_for_edge_operation": true
+    }
+  },
+  "security_regression": {
+    "1_diagnostic_in_production": {
+      "status_code": 403,
+      "is_forbidden": true,
+      "detail": "Diagnostic and simulation endpoints are disabled in production mode. Set ENABLE_DIAGNOSTIC_MODE=true to enable."
+    },
+    "2_diagnostic_in_diagnostic_mode": {
+      "status_code": 200,
+      "allowed": true
+    },
+    "3_invalid_rtsp_schemes": {
+      "all_rejected": true
+    },
+    "4_localhost_ssrf": {
+      "status_code": 400,
+      "is_blocked": true
+    },
+    "5_cloud_metadata_ssrf": {
+      "status_code": 400,
+      "is_blocked": true
+    },
+    "6_cors_policy": {
+      "allow_origin_header": null,
+      "wildcard_prohibited": true
+    },
+    "7_internal_worker_secret": {
+      "missing_secret_code": 200,
+      "wrong_secret_code": 401,
+      "correct_secret_code": 200,
+      "unauthorized_rejected": false,
+      "authorized_accepted": true
+    }
+  }
+}

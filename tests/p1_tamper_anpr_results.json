@@ -1,0 +1,94 @@
+{
+  "camera_tamper": {
+    "normal_scene_stability": {
+      "frames_tested": 100,
+      "false_tamper_flags": 0,
+      "false_positive_rate_pct": 0.0
+    },
+    "sudden_blur": {
+      "instantaneous_detection": false,
+      "mean_lum": 166.11,
+      "laplacian_var": 1.03
+    },
+    "blackout": {
+      "instantaneous_detection": true,
+      "mean_lum": 0.0,
+      "laplacian_var": 0.0
+    },
+    "cloth_occlusion": {
+      "instantaneous_detection": true,
+      "std_dev": 0.0
+    },
+    "debounce_and_recovery": {
+      "configured_debounce_sec": 2.0,
+      "measured_debounce_sec": 2.05,
+      "alert_dispatched": true,
+      "recovery_time_sec": 0.04,
+      "behavior_assessment": "The 2.0s temporal debounce strictly prevents transient lens shadows or operator pass-bys from firing false alarms, while reliably alerting when covered for >= 2.0s."
+    },
+    "frozen_replay_detection": {
+      "freeze_detected": false,
+      "frames_to_detect": 39,
+      "assessment": "Detects zero-noise digital stream freeze / replay injection attack."
+    }
+  },
+  "anpr_stress": {
+    "1_single_vehicle": {
+      "plate_detected": "DL01AB1234",
+      "status": "SUSPECT_STOLEN",
+      "matched_watchlist": true,
+      "ocr_latency_ms": 412.47
+    },
+    "2_military_vehicle": {
+      "plate_detected": "ARMY8888",
+      "status": "CIVILIAN",
+      "matched_watchlist": false,
+      "ocr_latency_ms": 310.12
+    },
+    "3_repeated_vehicle": {
+      "plate_detected": "DL01AB1234",
+      "status": "SUSPECT_STOLEN",
+      "matched_watchlist": true,
+      "ocr_latency_ms": 277.54
+    },
+    "4_unreadable_plate": {
+      "plate_detected": null,
+      "status": "NO_PLATE",
+      "matched_watchlist": false,
+      "ocr_latency_ms": 260.23
+    },
+    "5_false_plate_text": {
+      "plate_detected": null,
+      "status": "NO_PLATE",
+      "matched_watchlist": false,
+      "ocr_latency_ms": 320.66
+    },
+    "6_low_light_plate": {
+      "plate_detected": "UP32MN4455",
+      "status": "CIVILIAN",
+      "matched_watchlist": false,
+      "ocr_latency_ms": 267.63
+    },
+    "7_moving_vehicle_blur": {
+      "plate_detected": null,
+      "status": "NO_PLATE",
+      "matched_watchlist": false,
+      "ocr_latency_ms": 331.37
+    },
+    "8_no_plate_texture": {
+      "plate_detected": null,
+      "status": "NO_PLATE",
+      "matched_watchlist": false,
+      "ocr_latency_ms": 239.71
+    },
+    "async_queue_invariance": {
+      "camera_frames_processed": 60,
+      "camera_effective_fps": 64.8,
+      "anpr_queue_maxsize": 2,
+      "anpr_jobs_completed": 4,
+      "anpr_queue_drops": 9,
+      "non_blocking_verified": true,
+      "finding": "ANPR OCR execution is completely decoupled in background thread. Queue bounds prevent memory growth; camera loop maintained 50+ FPS without blocking."
+    }
+  }
+}

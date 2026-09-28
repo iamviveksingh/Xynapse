@@ -1,0 +1,34 @@
+# ==============================================================================
+# XYNAPSE // IBVAP Core Dependencies
+# Production Edge AI & Border Surveillance Platform
+# ==============================================================================
+
+# Core API & Async Web Framework
+fastapi>=0.110.0
+uvicorn>=0.28.0
+websockets>=12.0
+python-multipart>=0.0.9
+pydantic>=2.10.0
+pydantic-settings>=2.1.0
+
+# Database & Cryptographic Ledger
+sqlalchemy>=2.0.0
+
+# Computer Vision & Deep Learning (YuNet, SFace, OpenCV Pipeline)
+opencv-python>=4.8.0
+numpy>=1.26.0
+
+# Object Detection & Tracking (YOLOv8 Sentry)
+ultralytics>=8.1.0
+
+# Automatic Number Plate Recognition (ANPR Engine)
+rapidocr-onnxruntime>=1.2.0
+onnxruntime>=1.17.0
+
+# System Telemetry & Hardware Monitoring
+psutil>=5.9.0
+
+# Testing & Quality Assurance
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+httpx>=0.27.0

@@ -1,0 +1,92 @@
+{
+  "1_normal_outdoor_high_contrast": {
+    "mean_lum": 114.28,
+    "std_dev": 52.88,
+    "lap_var": 2312.64,
+    "curr_cond_a": false,
+    "curr_cond_b": false,
+    "curr_cond_c": false,
+    "curr_tampered": false
+  },
+  "2_normal_indoor": {
+    "mean_lum": 129.3,
+    "std_dev": 44.91,
+    "lap_var": 1015.42,
+    "curr_cond_a": false,
+    "curr_cond_b": false,
+    "curr_cond_c": false,
+    "curr_tampered": false
+  },
+  "3_complete_blackout": {
+    "mean_lum": 0.0,
+    "std_dev": 0.0,
+    "lap_var": 0.0,
+    "curr_cond_a": true,
+    "curr_cond_b": true,
+    "curr_cond_c": true,
+    "curr_tampered": true
+  },
+  "4_hand_cloth_occlusion": {
+    "mean_lum": 49.76,
+    "std_dev": 1.46,
+    "lap_var": 42.45,
+    "curr_cond_a": false,
+    "curr_cond_b": false,
+    "curr_cond_c": false,
+    "curr_tampered": false
+  },
+  "5_severe_gaussian_blur": {
+    "mean_lum": 114.06,
+    "std_dev": 46.18,
+    "lap_var": 0.72,
+    "curr_cond_a": false,
+    "curr_cond_b": false,
+    "curr_cond_c": false,
+    "curr_tampered": false
+  },
+  "6_moderate_gaussian_blur": {
+    "mean_lum": 114.22,
+    "std_dev": 48.62,
+    "lap_var": 1.06,
+    "curr_cond_a": false,
+    "curr_cond_b": false,
+    "curr_cond_c": false,
+    "curr_tampered": false
+  },
+  "7_partial_lens_obstruction": {
+    "mean_lum": 65.15,
+    "std_dev": 61.75,
+    "lap_var": 1192.17,
+    "curr_cond_a": false,
+    "curr_cond_b": false,
+    "curr_cond_c": false,
+    "curr_tampered": false
+  },
+  "8_bright_sky_dark_ground_blurred": {
+    "mean_lum": 135.0,
+    "std_dev": 98.43,
+    "lap_var": 0.17,
+    "curr_cond_a": false,
+    "curr_cond_b": false,
+    "curr_cond_c": false,
+    "curr_tampered": false
+  },
+  "8b_bright_sky_dark_ground_sharp": {
+    "mean_lum": 135.0,
+    "std_dev": 105.0,
+    "lap_var": 183.75,
+    "curr_cond_a": false,
+    "curr_cond_b": false,
+    "curr_cond_c": false,
+    "curr_tampered": false
+  },
+  "9_low_light_scene": {
+    "mean_lum": 13.23,
+    "std_dev": 6.35,
+    "lap_var": 35.78,
+    "curr_cond_a": true,
+    "curr_cond_b": false,
+    "curr_cond_c": false,
+    "curr_tampered": true
+  }
+}

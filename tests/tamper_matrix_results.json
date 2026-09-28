@@ -1,0 +1,83 @@
+{
+  "1. Normal outdoor high-contrast": {
+    "mean": 109.36,
+    "std_dev": 40.75,
+    "lap_var": 495.41,
+    "cond_a_blackout": false,
+    "cond_b_cloth": false,
+    "cond_c_blur": false,
+    "tampered_current": false
+  },
+  "2. Normal indoor scene": {
+    "mean": 130.31,
+    "std_dev": 45.06,
+    "lap_var": 201.74,
+    "cond_a_blackout": false,
+    "cond_b_cloth": false,
+    "cond_c_blur": false,
+    "tampered_current": false
+  },
+  "3. Complete blackout": {
+    "mean": 1.52,
+    "std_dev": 0.71,
+    "lap_var": 10.16,
+    "cond_a_blackout": true,
+    "cond_b_cloth": true,
+    "cond_c_blur": false,
+    "tampered_current": true
+  },
+  "4. Hand/cloth occlusion": {
+    "mean": 100.83,
+    "std_dev": 1.46,
+    "lap_var": 42.46,
+    "cond_a_blackout": false,
+    "cond_b_cloth": false,
+    "cond_c_blur": false,
+    "tampered_current": false
+  },
+  "5. Severe Gaussian blur (Outdoor)": {
+    "mean": 109.38,
+    "std_dev": 36.0,
+    "lap_var": 0.97,
+    "cond_a_blackout": false,
+    "cond_b_cloth": false,
+    "cond_c_blur": false,
+    "tampered_current": false
+  },
+  "6. Moderate Gaussian blur (Outdoor)": {
+    "mean": 109.37,
+    "std_dev": 37.61,
+    "lap_var": 1.08,
+    "cond_a_blackout": false,
+    "cond_b_cloth": false,
+    "cond_c_blur": false,
+    "tampered_current": false
+  },
+  "7. Partial lens obstruction": {
+    "mean": 75.94,
+    "std_dev": 64.35,
+    "lap_var": 180.43,
+    "cond_a_blackout": false,
+    "cond_b_cloth": false,
+    "cond_c_blur": false,
+    "tampered_current": false
+  },
+  "8. Bright sky + dark ground (Severe Blur)": {
+    "mean": 127.5,
+    "std_dev": 98.05,
+    "lap_var": 0.12,
+    "cond_a_blackout": false,
+    "cond_b_cloth": false,
+    "cond_c_blur": false,
+    "tampered_current": false
+  },
+  "9. Low-light border scene (Normal Night)": {
+    "mean": 26.06,
+    "std_dev": 9.14,
+    "lap_var": 91.42,
+    "cond_a_blackout": false,
+    "cond_b_cloth": false,
+    "cond_c_blur": false,
+    "tampered_current": false
+  }
+}

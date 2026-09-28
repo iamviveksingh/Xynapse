@@ -1,0 +1,92 @@
+{
+  "normal_outdoor_high_contrast": {
+    "mean_lum": 124.02,
+    "std_dev": 57.19,
+    "laplacian_var": 585.27,
+    "calc_time_ms": 8.126,
+    "clause_a_blackout": false,
+    "clause_b_uniform": false,
+    "clause_c_edge_loss": false,
+    "current_tampered": false
+  },
+  "normal_indoor": {
+    "mean_lum": 131.49,
+    "std_dev": 51.82,
+    "laplacian_var": 524.64,
+    "calc_time_ms": 6.596,
+    "clause_a_blackout": false,
+    "clause_b_uniform": false,
+    "clause_c_edge_loss": false,
+    "current_tampered": false
+  },
+  "complete_blackout": {
+    "mean_lum": 1.61,
+    "std_dev": 0.93,
+    "laplacian_var": 17.31,
+    "calc_time_ms": 7.889,
+    "clause_a_blackout": true,
+    "clause_b_uniform": false,
+    "clause_c_edge_loss": false,
+    "current_tampered": true
+  },
+  "hand_cloth_occlusion": {
+    "mean_lum": 28.0,
+    "std_dev": 0.65,
+    "laplacian_var": 8.32,
+    "calc_time_ms": 6.557,
+    "clause_a_blackout": false,
+    "clause_b_uniform": true,
+    "clause_c_edge_loss": false,
+    "current_tampered": true
+  },
+  "severe_gaussian_blur": {
+    "mean_lum": 124.01,
+    "std_dev": 51.66,
+    "laplacian_var": 0.79,
+    "calc_time_ms": 6.342,
+    "clause_a_blackout": false,
+    "clause_b_uniform": false,
+    "clause_c_edge_loss": false,
+    "current_tampered": false
+  },
+  "moderate_gaussian_blur": {
+    "mean_lum": 124.0,
+    "std_dev": 54.03,
+    "laplacian_var": 0.86,
+    "calc_time_ms": 7.407,
+    "clause_a_blackout": false,
+    "clause_b_uniform": false,
+    "clause_c_edge_loss": false,
+    "current_tampered": false
+  },
+  "partial_lens_obstruction": {
+    "mean_lum": 56.8,
+    "std_dev": 54.02,
+    "laplacian_var": 221.31,
+    "calc_time_ms": 6.81,
+    "clause_a_blackout": false,
+    "clause_b_uniform": false,
+    "clause_c_edge_loss": false,
+    "current_tampered": false
+  },
+  "bright_sky_dark_ground": {
+    "mean_lum": 134.38,
+    "std_dev": 105.22,
+    "laplacian_var": 305.22,
+    "calc_time_ms": 6.369,
+    "clause_a_blackout": false,
+    "clause_b_uniform": false,
+    "clause_c_edge_loss": false,
+    "current_tampered": false
+  },
+  "low_light_scene": {
+    "mean_lum": 13.58,
+    "std_dev": 3.9,
+    "laplacian_var": 42.94,
+    "calc_time_ms": 6.414,
+    "clause_a_blackout": true,
+    "clause_b_uniform": false,
+    "clause_c_edge_loss": false,
+    "current_tampered": true
+  }
+}

@@ -1,0 +1,199 @@
+{
+  "test_1_vehicle_anpr": {
+    "1A_readable_plate": {
+      "status": "PASS",
+      "plate_number": "DL01AB1234",
+      "confidence": 0.805,
+      "plate_status": "RECOGNIZED",
+      "snapshot_exists": true,
+      "plate_crop_exists": true,
+      "api_searchable": true
+    },
+    "1B_unreadable_plate": {
+      "status": "PASS",
+      "plate_number": null,
+      "plate_status": "UNREADABLE",
+      "vehicle_type": "Car",
+      "no_fake_plate": true,
+      "snapshot_preserved": true
+    },
+    "1C_two_simultaneous_vehicles": {
+      "status": "PASS",
+      "track_1": {
+        "event_id": "TR-VAL01-1790570102-101",
+        "plate": "DL01AB1234"
+      },
+      "track_2": {
+        "event_id": "TR-VAL01-1790570102-102",
+        "plate": "UP32MN4455"
+      },
+      "no_cross_contamination": true
+    },
+    "1D_vehicle_leaves_during_ocr": {
+      "status": "PASS",
+      "transit_finalized_correctly": true,
+      "plate_recognized": "DL01AB1234"
+    },
+    "1E_watchlist_evaluation": {
+      "status": "PASS",
+      "watchlist_alert_generated": true,
+      "watchlist_severity": "CRITICAL",
+      "civilian_alert_suppressed": true
+    }
+  },
+  "test_2_perimeter_intrusion": {
+    "status": "PASS",
+    "polygon_breach_detected": true,
+    "alert_created": true,
+    "evidence_sha256_verified": true,
+    "audit_chain_verified": true,
+    "websocket_broadcast_verified": true,
+    "deduplication_cooldown_verified": true,
+    "re_entry_verified": true,
+    "wildlife_suppression_verified": true
+  },
+  "test_3_low_light": {
+    "status": "PASS",
+    "day_luminance": 130.0,
+    "night_luminance": 33.7,
+    "hysteresis_luminance": 49.1,
+    "hysteresis_preserved": true,
+    "restored_luminance": 87.7,
+    "low_light_alone_no_alert": true,
+    "intrusion_optical_mode": "NIGHT_CLAHE"
+  },
+  "test_4_rtsp_recovery": {
+    "status": "PASS",
+    "simulation_type": "Controlled Socket/Stream Disconnect Simulation",
+    "t0_start": 1790570106.625,
+    "t1_disconnect": 1790570106.638,
+    "t2_detect_failure": 1790570106.638,
+    "t3_reconnect_attempt": 1790570106.642,
+    "t4_recovered": 1790570106.692,
+    "recovery_time_sec": 0.055,
+    "camera_manager_alive": true,
+    "fallback_stream_served": true,
+    "no_db_corruption": true
+  },
+  "test_5_store_and_forward": {
+    "status": "PASS",
+    "events_generated": 4,
+    "events_queued": 4,
+    "events_synchronized": 4,
+    "duplicates_rejected": 1,
+    "data_loss": 0,
+    "idempotency_verified": true
+  },
+  "performance": {
+    "1_camera": {
+      "fps": 6.3,
+      "yolo_latency_ms": 159.1,
+      "anpr_latency_ms": 0.3,
+      "cpu_percent": 1072.7,
+      "ram_mb": 554.1,
+      "queue_depth": 0,
+      "queue_drops": 0,
+      "end_to_end_alert_latency_ms": 0.3
+    },
+    "2_cameras": {
+      "fps_per_camera": 3.4,
+      "fps_total": 6.7,
+      "yolo_latency_ms": 40.44,
+      "anpr_latency_ms": 0.3,
+      "cpu_percent": 1011.0,
+      "ram_mb": 722.7,
+      "queue_depth": 0,
+      "queue_drops": 0,
+      "end_to_end_alert_latency_ms": 0.3
+    }
+  },
+  "failure_injections": [
+    {
+      "id": 1,
+      "failure": "Camera Disconnect (RTSP Socket Drop)",
+      "expected": "Camera status transitions to OFFLINE, fallback test pattern served, backend & manager loop stay alive, background reconnection loop continues",
+      "actual": "CameraManager gracefully handled failed capture; status set to OFFLINE; served fallback frame; zero crash",
+      "recovery": "Automatic reconnect loop reopens stream when feed restores; transitions to ONLINE",
+      "data_loss": "Zero",
+      "duplicate_events": "Zero",
+      "user_visible": "Defense HUD displays 'CAM-01 \u2022 CAMERA OFFLINE' with tactical standby telemetry"
+    },
+    {
+      "id": 2,
+      "failure": "HQ Central Server Unavailable / Network Severed",
+      "expected": "Outbox accumulates events in SQLite with status=PENDING; exponential retry backoff; zero event drops",
+      "actual": "sync_pending_events safely caught HTTP/socket failure, incremented attempt_count, set next_retry_at backoff",
+      "recovery": "SyncWorker automatically flushes all pending events to /api/hq/ingest upon network restoration",
+      "data_loss": "Zero (persisted in SQLite WAL)",
+      "duplicate_events": "Zero (HQ ingest validates remote_id idempotently)",
+      "user_visible": "Outbox status indicator shows 'PENDING SYNC', auto-updates to 'SYNCED' upon connection"
+    },
+    {
+      "id": 3,
+      "failure": "License Plate Obscured / Muddy / Blurry (OCR Unreadable)",
+      "expected": "plate_number set to NULL; plate_status set to UNREADABLE; vehicle event and snapshot preserved; zero hallucinated plates",
+      "actual": "RapidOCR/ANPREngine returned None; database recorded plate_number=NULL and plate_status=UNREADABLE; full vehicle snapshot saved",
+      "recovery": "Subsequent camera frame with clearer angle updates record if vehicle is still in view",
+      "data_loss": "Zero",
+      "duplicate_events": "Zero",
+      "user_visible": "Transit table displays 'UNREADABLE' badge with vehicle image thumbnail"
+    },
+    {
+      "id": 4,
+      "failure": "Vehicle Leaves Field of View Before Asynchronous OCR Completes",
+      "expected": "Transit log remains PENDING while worker executes; worker updates exact transit record upon completion; finalization occurs cleanly",
+      "actual": "Active transit map preserved pending_ocr=True; worker populated plate and marked RECOGNIZED; clean finalization",
+      "recovery": "Completed asynchronously without blocking video pipeline",
+      "data_loss": "Zero",
+      "duplicate_events": "Zero",
+      "user_visible": "Transit updates from PENDING to RECOGNIZED with valid plate and snapshot"
+    },
+    {
+      "id": 5,
+      "failure": "Two Vehicles in Adjacent Lanes Simultaneously",
+      "expected": "Two independent track IDs and event IDs; separate SQLite transit records; zero OCR cross-contamination",
+      "actual": "Both tracks localized and enqueued independently; separate DB rows created; distinct plate assignments",
+      "recovery": "Both transits finalized independently",
+      "data_loss": "Zero",
+      "duplicate_events": "Zero",
+      "user_visible": "Two distinct vehicle cards in checkpost transit log"
+    },
+    {
+      "id": 6,
+      "failure": "Sudden Environmental Illumination Drop / Low-Light Transition",
+      "expected": "Automatic transition to NIGHT_CLAHE; hysteresis prevents rapid toggling; zero false intrusion alarms",
+      "actual": "Luminance detector switched mode at 45.0 threshold; hysteresis held mode at 50.0; zero false alerts generated",
+      "recovery": "Returns to DAY_RGB when illumination exceeds 55.0 exit threshold",
+      "data_loss": "Zero",
+      "duplicate_events": "Zero",
+      "user_visible": "Optical mode badge updates to 'NIGHT_CLAHE' on HUD; feed visual contrast dynamically boosted"
+    },
+    {
+      "id": 7,
+      "failure": "Database Concurrent Writes Under High Load",
+      "expected": "SQLite WAL mode + busy_timeout=5000ms prevents 'database is locked' errors during simultaneous alert/transit writes",
+      "actual": "Simulated 10 concurrent threads inserting into xynapse.db; 10/10 transactions committed successfully with zero lock exceptions",
+      "recovery": "Automatic WAL checkpointing and serialized write queue",
+      "data_loss": "Zero",
+      "duplicate_events": "Zero",
+      "user_visible": "Zero user-visible errors or aborted transactions"
+    },
+    {
+      "id": 8,
+      "failure": "Backend Edge Process Restart / Power Cycle During Operation",
+      "expected": "Database reloaded on startup; camera configurations restored from SQLite; outbox records preserved",
+      "actual": "Engine re-initialized; CameraConfig queries reloaded all 4 cameras; pending outbox records intact",
+      "recovery": "Complete cold-boot initialization into operational state in < 1.5 seconds",
+      "data_loss": "Zero",
+      "duplicate_events": "Zero",
+      "user_visible": "Frontend reconnects via WebSocket with full historical record intact"
+    }
+  ],
+  "security_sanity": {
+    "status": "PASS",
+    "diagnostic_mode_disabled": true,
+    "demo_trigger_status_code": 403,
+    "diagnostic_sandbox_hidden": true,
+    "terminology_corrected": true
+  }
+}

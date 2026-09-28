@@ -1,0 +1,455 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-pearl: #F6F8FC;
+    --bg-glass: rgba(255, 255, 255, 0.75);
+    --bg-glass-elevated: rgba(255, 255, 255, 0.88);
+    --text-primary: #111827;
+    --text-secondary: #4B5563;
+    --text-muted: #9CA3AF;
+    --border-glass: rgba(255, 255, 255, 0.85);
+    --border-subtle: rgba(17, 24, 39, 0.08);
+    --accent-blue: #0071E3;
+    --accent-violet: #8B5CF6;
+    --accent-pink: #EC4899;
+  }
+
+  body {
+    background-color: var(--bg-pearl);
+    color: var(--text-primary);
+    font-family: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    letter-spacing: -0.015em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+.font-display {
+  font-family: 'Outfit', 'Plus Jakarta Sans', -apple-system, sans-serif;
+  letter-spacing: -0.025em;
+}
+
+.font-telemetry {
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  letter-spacing: -0.02em;
+}
+
+/* Tactical Corner Reticle Frame for Camera Panels */
+.reticle-frame {
+  position: relative;
+}
+.reticle-frame::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 16px;
+  height: 16px;
+  border-top: 2px solid rgba(0, 113, 227, 0.85);
+  border-left: 2px solid rgba(0, 113, 227, 0.85);
+  pointer-events: none;
+  z-index: 20;
+}
+.reticle-frame::after {
+  content: '';
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 16px;
+  height: 16px;
+  border-bottom: 2px solid rgba(0, 113, 227, 0.85);
+  border-right: 2px solid rgba(0, 113, 227, 0.85);
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* Top Specular Rim for Luxury Apple Vision Surface Reflection */
+.specular-rim {
+  position: relative;
+}
+.specular-rim::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.95) 50%, transparent 100%);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Tactical Live Radar Beacon Pulse */
+@keyframes radarBeacon {
+  0% { transform: scale(0.9); opacity: 0.9; }
+  70% { transform: scale(2.4); opacity: 0; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+.radar-beacon {
+  position: relative;
+}
+.radar-beacon::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.55);
+  animation: radarBeacon 2.2s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+  pointer-events: none;
+}
+.radar-beacon-critical::after {
+  background: rgba(239, 68, 68, 0.65);
+}
+
+/* ========================================================================= */
+/* NEO-APPLE GLASS & IRIDESCENT AMBIENT ENVIRONMENT                          */
+/* ========================================================================= */
+
+/* Pearl Atmospheric Background with Living Organic Iridescent Lighting */
+.neo-canvas, .spatial-canvas {
+  background-color: #F5F7FA;
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(at 10% 10%, rgba(56, 189, 248, 0.08) 0px, transparent 45%),
+    radial-gradient(at 90% 15%, rgba(168, 85, 247, 0.07) 0px, transparent 45%),
+    radial-gradient(at 50% 90%, rgba(244, 114, 182, 0.05) 0px, transparent 50%),
+    radial-gradient(at 85% 85%, rgba(14, 165, 233, 0.06) 0px, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* Living Ambient Atmospheric Light Orbs */
+.neo-canvas::before {
+  content: '';
+  position: fixed;
+  top: -10vw;
+  left: 20vw;
+  width: 50vw;
+  height: 50vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.07) 0%, rgba(168, 85, 247, 0.04) 50%, transparent 70%);
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  animation: floatAmbient1 24s ease-in-out infinite alternate;
+}
+
+.neo-canvas::after {
+  content: '';
+  position: fixed;
+  bottom: -15vw;
+  right: 5vw;
+  width: 45vw;
+  height: 45vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.05) 0%, rgba(59, 130, 246, 0.04) 50%, transparent 70%);
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: 0;
+  animation: floatAmbient2 28s ease-in-out infinite alternate;
+}
+
+@keyframes floatAmbient1 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(4vw, 5vh) scale(1.08); }
+  100% { transform: translate(-3vw, 2vh) scale(0.95); }
+}
+
+@keyframes floatAmbient2 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-5vw, -4vh) scale(1.1); }
+  100% { transform: translate(3vw, -2vh) scale(0.92); }
+}
+
+/* Precision Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.65);
+}
+
+/* ========================================================================= */
+/* NEO-GLASS SURFACES (DEPTH 1 & 2)                                         */
+/* ========================================================================= */
+
+/* Primary Translucent Glass Surface with Specular Rim */
+.neo-glass, .spatial-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0.68) 100%);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 
+    0 20px 45px -12px rgba(15, 23, 42, 0.05),
+    0 4px 16px -2px rgba(0, 113, 227, 0.03),
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.02);
+  border-radius: 1.75rem;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  position: relative;
+}
+
+/* Interactive Glass Card with Apple Spring Hover Elevation */
+.neo-glass-hover:hover, .spatial-card-hover:hover {
+  transform: translateY(-3px) scale(1.002);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.78) 100%);
+  border-color: rgba(255, 255, 255, 1);
+  box-shadow: 
+    0 26px 60px -12px rgba(0, 113, 227, 0.12),
+    0 6px 20px -2px rgba(15, 23, 42, 0.04),
+    inset 0 2px 2px rgba(255, 255, 255, 1);
+}
+
+/* Recessed Inset Glass Well */
+.neo-glass-well, .spatial-well {
+  background: rgba(241, 245, 249, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: inset 0 2px 5px rgba(15, 23, 42, 0.04);
+  border-radius: 1.25rem;
+}
+
+/* Elevated Floating Glass (Overlays, Modals, Popovers) - DEPTH 3 */
+.neo-glass-elevated {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.82) 100%);
+  backdrop-filter: blur(36px) saturate(210%);
+  -webkit-backdrop-filter: blur(36px) saturate(210%);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 
+    0 35px 80px -15px rgba(15, 23, 42, 0.16),
+    0 12px 30px -5px rgba(0, 113, 227, 0.06),
+    inset 0 2px 3px rgba(255, 255, 255, 1);
+  border-radius: 2rem;
+}
+
+/* Specular Top Rim Highlight */
+.glass-specular-rim {
+  position: relative;
+}
+.glass-specular-rim::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95), transparent);
+  pointer-events: none;
+}
+
+/* ========================================================================= */
+/* TACTILE GEL BUTTONS                                                       */
+/* ========================================================================= */
+
+.gel-btn-primary, .spatial-btn-primary {
+  background: linear-gradient(135deg, #0071E3 0%, #3CA5FF 100%);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 
+    0 8px 24px -4px rgba(0, 113, 227, 0.48),
+    0 2px 6px rgba(0, 113, 227, 0.25),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.65),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.1);
+  border-radius: 9999px;
+  font-weight: 600;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.gel-btn-primary:hover, .spatial-btn-primary:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    0 14px 32px -4px rgba(0, 113, 227, 0.6),
+    0 4px 12px rgba(0, 113, 227, 0.3),
+    inset 0 2px 2px rgba(255, 255, 255, 0.85);
+}
+
+.gel-btn-primary:active, .spatial-btn-primary:active {
+  transform: translateY(0) scale(0.97);
+  box-shadow: 0 4px 12px rgba(0, 113, 227, 0.35);
+}
+
+.gel-btn-secondary, .spatial-btn {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.75) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: #1E293B;
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 
+    0 4px 12px rgba(15, 23, 42, 0.05),
+    inset 0 1.5px 1px rgba(255, 255, 255, 1);
+  border-radius: 9999px;
+  font-weight: 600;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.gel-btn-secondary:hover, .spatial-btn:hover {
+  background: #FFFFFF;
+  transform: translateY(-1.5px) scale(1.01);
+  box-shadow: 
+    0 8px 20px rgba(15, 23, 42, 0.09),
+    inset 0 1.5px 1px rgba(255, 255, 255, 1);
+}
+
+.gel-btn-secondary:active, .spatial-btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.gel-btn-danger {
+  background: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 
+    0 6px 20px -3px rgba(239, 68, 68, 0.45),
+    inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  border-radius: 9999px;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gel-btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px -3px rgba(239, 68, 68, 0.55);
+}
+
+.gel-btn-success {
+  background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 
+    0 6px 20px -3px rgba(16, 185, 129, 0.45),
+    inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  border-radius: 9999px;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gel-btn-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px -3px rgba(16, 185, 129, 0.55);
+}
+
+/* ========================================================================= */
+/* TACTILE SEGMENTED CONTROLS & PILLS                                       */
+/* ========================================================================= */
+
+.apple-segmented-control {
+  background: rgba(243, 244, 246, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 4px;
+  border-radius: 9999px;
+  display: inline-flex;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.apple-segmented-btn {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 9999px;
+  color: #4B5563;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border: none;
+  cursor: pointer;
+}
+
+.apple-segmented-btn:hover {
+  color: #111827;
+}
+
+.apple-segmented-btn.active {
+  background: #FFFFFF;
+  color: #0071E3;
+  box-shadow: 
+    0 3px 10px rgba(0, 113, 227, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+/* Spatial Modal Backdrop */
+.spatial-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.28);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Subtle Organic Wave & Pulse */
+@keyframes ambientGlow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.04); }
+}
+
+.animate-ambient-glow {
+  animation: ambientGlow 8s ease-in-out infinite;
+}
+
+/* Sound Wave Equalizer Animation for Audio Indicator */
+@keyframes eqBar1 {
+  0%, 100% { height: 4px; }
+  50% { height: 14px; }
+}
+
+@keyframes eqBar2 {
+  0%, 100% { height: 12px; }
+  50% { height: 5px; }
+}
+
+@keyframes eqBar3 {
+  0%, 100% { height: 6px; }
+  50% { height: 16px; }
+}
+
+.animate-eq-1 {
+  animation: eqBar1 1s ease-in-out infinite;
+}
+.animate-eq-2 {
+  animation: eqBar2 0.8s ease-in-out infinite 0.2s;
+}
+.animate-eq-3 {
+  animation: eqBar3 1.1s ease-in-out infinite 0.4s;
+}
+
+/* Tactical HUD Scanline & Shimmer */
+@keyframes hudScan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(1000%); }
+}
+
+.hud-scanline {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 0%, rgba(56, 189, 248, 0.04) 50%, transparent 100%);
+  animation: hudScan 8s linear infinite;
+}

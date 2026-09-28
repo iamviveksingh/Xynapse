@@ -1,0 +1,46 @@
+# Python & Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.pytest_cache/
+.pytest_cache/
+
+# Node / Frontend
+**/node_modules/
+**/dist/
+.vite/
+.reticle/
+**/.reticle/
+
+# Development Debug Captures & Trace Dumps
+debug/
+*.tmp
+
+# SQLite Databases & WAL Cache
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.log
+
+# Sensitive Evidence Captures (Keep folders, exclude runtime photos)
+evidence/alerts/*
+evidence/transits/*
+evidence/faces/*
+!evidence/alerts/.gitkeep
+!evidence/transits/.gitkeep
+!evidence/faces/.gitkeep
+
+# Environment & Secrets
+.env
+.env.local
+
+# OS Specific
+.DS_Store
+Thumbs.db
+desktop.ini
