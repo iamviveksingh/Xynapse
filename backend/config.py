@@ -1,4 +1,7 @@
 import os
+# Prevent read-only config directory warnings on cloud platforms like Render
+os.environ.setdefault("YOLO_CONFIG_DIR", "/tmp/Ultralytics")
+
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -26,8 +29,8 @@ class Settings(BaseSettings):
     HQ_SYNC_URL: str = os.getenv("HQ_SYNC_URL", "")  # e.g. "http://localhost:8000/api/hq/ingest"
 
     # Security & Hardening Configuration
-    HOST: str = os.getenv("XYNAPSE_HOST", "127.0.0.1")
-    PORT: int = int(os.getenv("XYNAPSE_PORT", "8000"))
+    HOST: str = os.getenv("HOST") or os.getenv("XYNAPSE_HOST", "0.0.0.0")
+    PORT: int = int(os.getenv("PORT") or os.getenv("XYNAPSE_PORT", "8000"))
     ENVIRONMENT: str = os.getenv("XYNAPSE_ENV", "production")
     ENABLE_DIAGNOSTIC_MODE: bool = os.getenv("ENABLE_DIAGNOSTIC_MODE", "false").lower() in ("true", "1", "yes")
     ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5175,http://127.0.0.1:5175,http://localhost:8000,http://127.0.0.1:8000")

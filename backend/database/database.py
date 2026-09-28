@@ -24,6 +24,12 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# Auto-create all tables immediately upon database module initialization
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception:
+    pass
+
 def init_db():
     Base.metadata.create_all(bind=engine)
     # Ensure backward-compatible columns exist in SQLite database
