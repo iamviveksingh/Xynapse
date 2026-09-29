@@ -583,23 +583,12 @@ export default function LiveCamera({
                 )}
               </div>
             ) : (
-              <>
-                <img
-                  key={`${cameraId}-${refreshKey}`}
-                  src={streamSrc}
-                  alt="Live Camera Feed"
-                  className="w-full h-full object-contain select-none pointer-events-none"
-                />
-                {/* Quick WebCam Stream Activator Pill when WebCam is idle */}
-                <button
-                  onClick={handleToggleWebcam}
-                  className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center space-x-2.5 px-6 py-2.5 rounded-full bg-emerald-600/95 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-2xl border border-emerald-400/50 backdrop-blur-xl transition-all transform hover:scale-105 active:scale-95 animate-pulse"
-                  title="Connect your laptop or mobile camera directly to this tactical feed"
-                >
-                  <Video className="w-4 h-4" />
-                  <span>📷 Connect Laptop / Device WebCam</span>
-                </button>
-              </>
+              <img
+                key={`${cameraId}-${refreshKey}`}
+                src={streamSrc}
+                alt="Live Camera Feed"
+                className="w-full h-full object-contain select-none pointer-events-none"
+              />
             )}
           </>
         ) : (
