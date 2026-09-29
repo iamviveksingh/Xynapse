@@ -1,6 +1,6 @@
 import os
 # Prevent read-only config directory warnings on cloud platforms like Render
-os.environ.setdefault("YOLO_CONFIG_DIR", "/tmp/Ultralytics")
+os.environ.setdefault("YOLO_CONFIG_DIR", "/tmp")
 
 from pydantic_settings import BaseSettings
 
