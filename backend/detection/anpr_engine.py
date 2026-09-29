@@ -8,6 +8,29 @@ from backend.database.database import SessionLocal
 from backend.database.models import VehicleProfile
 
 
+_shared_ocr_engine = None
+
+def get_shared_ocr_engine():
+    """Singleton getter for OCR engine to prevent loading multiple 150MB+ models in cloud RAM."""
+    global _shared_ocr_engine
+    if _shared_ocr_engine is not None:
+        return _shared_ocr_engine
+    try:
+        from rapidocr_onnxruntime import RapidOCR
+        _shared_ocr_engine = RapidOCR()
+        print("[ModelCache] Loaded Shared RapidOCR ONNX engine into singleton.")
+        return _shared_ocr_engine
+    except Exception as e:
+        print(f"[ANPREngine] Failed to initialize RapidOCR: {e}")
+        try:
+            import easyocr
+            _shared_ocr_engine = easyocr.Reader(['en'], gpu=False)
+            print("[ModelCache] Loaded Shared EasyOCR fallback into singleton.")
+            return _shared_ocr_engine
+        except Exception as ex2:
+            print(f"[ANPREngine] OCR fallback also failed: {ex2}")
+            return None
+
 class ANPREngine:
     """
     Real-Time Automatic Number Plate Recognition (ANPR) Engine.
@@ -26,27 +49,14 @@ class ANPREngine:
 
     def initialize(self) -> bool:
         """Initializes RapidOCR ONNX engine and loads vehicle profiles."""
-        try:
-            from rapidocr_onnxruntime import RapidOCR
-            self.ocr_engine = RapidOCR()
+        engine = get_shared_ocr_engine()
+        if engine is not None:
+            self.ocr_engine = engine
             self._is_initialized = True
-            print("[ANPREngine] RapidOCR ONNX initialized successfully.")
             self.reload_profiles()
             return True
-        except Exception as e:
-            print(f"[ANPREngine] Failed to initialize RapidOCR: {e}")
-            # Try fallback to EasyOCR or PyTesseract if available
-            try:
-                import easyocr
-                self.ocr_engine = easyocr.Reader(['en'], gpu=False)
-                self._is_initialized = True
-                print("[ANPREngine] EasyOCR fallback initialized.")
-                self.reload_profiles()
-                return True
-            except Exception as ex2:
-                print(f"[ANPREngine] OCR fallback also failed: {ex2}")
-                self._is_initialized = False
-                return False
+        self._is_initialized = False
+        return False
 
     def reload_profiles(self) -> int:
         """Loads vehicle profiles (Stolen Watchlist & Military Fleet) from SQLite."""

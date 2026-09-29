@@ -236,6 +236,35 @@ ANIMAL_CLASS_NAMES = {
 PERCEPTION_CLASSES = [0] + list(ANIMAL_CLASS_NAMES.keys())
 
 
+_cached_yolo_instance = None
+
+def get_shared_yolo_model(model_path: Optional[str] = None):
+    """Singleton getter for YOLOv8 weights to prevent multiple 100MB+ copies in cloud RAM."""
+    global _cached_yolo_instance
+    if _cached_yolo_instance is not None:
+        return _cached_yolo_instance
+    script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    candidate_paths = [
+        model_path,
+        os.path.join(os.getcwd(), "models", "yolov8n.pt"),
+        os.path.join(os.getcwd(), "xynapse", "models", "yolov8n.pt"),
+        os.path.join(script_dir, "models", "yolov8n.pt"),
+        os.path.join(os.path.dirname(script_dir), "models", "yolov8n.pt"),
+        os.path.join(os.getcwd(), "models", "yolov8n.onnx"),
+        os.path.join(os.getcwd(), "xynapse", "models", "yolov8n.onnx"),
+        os.path.join(script_dir, "models", "yolov8n.onnx"),
+    ]
+    for p in candidate_paths:
+        if p and os.path.exists(p):
+            try:
+                from ultralytics import YOLO
+                _cached_yolo_instance = YOLO(p)
+                print(f"[ModelCache] Loaded Shared YOLOv8 weights into singleton: {p}")
+                return _cached_yolo_instance
+            except Exception as e:
+                print(f"[ModelCache] Failed to load YOLO ({p}): {e}")
+    return None
+
 class PersonDetector(BaseDetector):
     """
     Intelligent Full-Body Human & Wildlife Perception Engine.
@@ -257,31 +286,13 @@ class PersonDetector(BaseDetector):
 
     def initialize(self) -> bool:
         """Finds and loads YOLOv8 model for full-body human perception."""
-        script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        candidate_paths = [
-            self.model_path,
-            os.path.join(os.getcwd(), "models", "yolov8n.pt"),
-            os.path.join(os.getcwd(), "xynapse", "models", "yolov8n.pt"),
-            os.path.join(script_dir, "models", "yolov8n.pt"),
-            os.path.join(os.path.dirname(script_dir), "models", "yolov8n.pt"),
-            os.path.join(os.getcwd(), "models", "yolov8n.onnx"),
-            os.path.join(os.getcwd(), "xynapse", "models", "yolov8n.onnx"),
-            os.path.join(script_dir, "models", "yolov8n.onnx"),
-        ]
-
-        for p in candidate_paths:
-            if p and os.path.exists(p):
-                try:
-                    from ultralytics import YOLO
-                    self.model = YOLO(p)
-                    self.use_yolo = True
-                    self._is_initialized = True
-                    print(f"[PersonDetector] Loaded YOLOv8 Full-Body Human & Wildlife Model from: {p}")
-                    # Warm up face fallback detector as well for FRS association
-                    self.fallback_face_detector.initialize()
-                    return True
-                except Exception as e:
-                    print(f"[PersonDetector] Failed to load YOLO ({p}): {e}")
+        shared_m = get_shared_yolo_model(self.model_path)
+        if shared_m is not None:
+            self.model = shared_m
+            self.use_yolo = True
+            self._is_initialized = True
+            self.fallback_face_detector.initialize()
+            return True
 
         # Fallback to FaceDetector if YOLO isn't available
         print("[PersonDetector] YOLOv8 unavailable. Falling back to FaceDetector.")

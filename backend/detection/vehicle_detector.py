@@ -27,28 +27,16 @@ class VehicleDetector(BaseDetector):
         self.initialize()
 
     def initialize(self) -> bool:
-        """Loads YOLOv8 ONNX model for high-efficiency CPU inference."""
-        script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        candidate_paths = [
-            self.model_path,
-            os.path.join(os.getcwd(), "models", "yolov8n.onnx"),
-            os.path.join(os.getcwd(), "yolov8n.onnx"),
-            os.path.join(script_dir, "models", "yolov8n.onnx"),
-            os.path.join(os.path.dirname(script_dir), "models", "yolov8n.onnx"),
-            os.path.join(os.getcwd(), "models", "yolov8n.pt"),
-            os.path.join(os.getcwd(), "yolov8n.pt"),
-        ]
-
-        for p in candidate_paths:
-            if p and os.path.exists(p):
-                try:
-                    from ultralytics import YOLO
-                    self.model = YOLO(p)
-                    self._is_initialized = True
-                    print(f"[VehicleDetector] YOLOv8 loaded successfully from: {p}")
-                    return True
-                except Exception as e:
-                    print(f"[VehicleDetector] Failed to load YOLO from {p}: {e}")
+        """Loads YOLOv8 model reusing shared cached singleton."""
+        try:
+            from backend.detection.person_detector import get_shared_yolo_model
+            shared_m = get_shared_yolo_model(self.model_path)
+            if shared_m is not None:
+                self.model = shared_m
+                self._is_initialized = True
+                return True
+        except Exception as e:
+            print(f"[VehicleDetector] Error fetching shared YOLO model: {e}")
 
         print("[VehicleDetector] No YOLO model found. Vehicle detection in bypass mode.")
         self._is_initialized = False
