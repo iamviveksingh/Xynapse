@@ -45,10 +45,109 @@ export default function LiveCamera({
   // Client WebCam Ingestion states (streams user's laptop/mobile camera to cloud AI)
   const [isWebcamActive, setIsWebcamActive] = useState(false);
   const [webcamError, setWebcamError] = useState(null);
+  const [webcamDetections, setWebcamDetections] = useState([]);
   const localVideoRef = useRef(null);
   const localCanvasRef = useRef(null);
+  const overlayCanvasRef = useRef(null);
   const mediaStreamRef = useRef(null);
   const ingestTimerRef = useRef(null);
+
+  const getOpticalFilterStyle = (mode) => {
+    switch (mode) {
+      case 'LOW_LIGHT_ENHANCE':
+        return 'contrast(1.55) brightness(1.25) saturate(0.85)';
+      case 'NVG_GREEN':
+        return 'sepia(1) hue-rotate(85deg) saturate(4) contrast(1.4) brightness(1.1)';
+      case 'FLIR_THERMAL':
+        return 'invert(0.9) hue-rotate(180deg) contrast(1.8) saturate(2.5)';
+      default:
+        return 'none';
+    }
+  };
+
+  const drawWebcamAnnotations = (dets) => {
+    const canvas = overlayCanvasRef.current;
+    const video = localVideoRef.current;
+    if (!canvas || !video) return;
+
+    const rect = video.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    if (canvas.width !== rect.width || canvas.height !== rect.height) {
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (!Array.isArray(dets) || dets.length === 0) return;
+
+    const scaleX = canvas.width / (video.videoWidth || 640);
+    const scaleY = canvas.height / (video.videoHeight || 480);
+
+    dets.forEach((d) => {
+      const bbox = d.bbox || [0, 0, 0, 0];
+      const x = bbox[0] * scaleX;
+      const y = bbox[1] * scaleY;
+      const w = bbox[2] * scaleX;
+      const h = bbox[3] * scaleY;
+
+      const isSuspect = d.role === 'SUSPECT' || d.matched_name?.toLowerCase().includes('suspect');
+      const isAuth = d.role === 'AUTHORIZED_GUARD';
+      const color = isSuspect ? '#EF4444' : isAuth ? '#10B981' : '#06B6D4';
+
+      // 1. Semi-transparent bounding box
+      ctx.fillStyle = isSuspect ? 'rgba(239, 68, 68, 0.15)' : 'rgba(6, 182, 212, 0.12)';
+      ctx.fillRect(x, y, w, h);
+
+      // 2. Tactical Corner Brackets
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.5;
+      const corner = Math.min(18, w * 0.25, h * 0.25);
+
+      ctx.beginPath();
+      ctx.moveTo(x, y + corner);
+      ctx.lineTo(x, y);
+      ctx.lineTo(x + corner, y);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x + w - corner, y);
+      ctx.lineTo(x + w, y);
+      ctx.lineTo(x + w, y + corner);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, y + h - corner);
+      ctx.lineTo(x, y + h);
+      ctx.lineTo(x + corner, y + h);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x + w - corner, y + h);
+      ctx.lineTo(x + w, y + h);
+      ctx.lineTo(x + w, y + h - corner);
+      ctx.stroke();
+
+      // 3. Tactical Cyber Label Badge
+      const conf = Math.round((d.confidence || 0.92) * 100);
+      const name = d.matched_name || (d.is_animal ? d.class_name?.toUpperCase() : 'HUMAN');
+      const roleText = isSuspect ? 'WANTED SUSPECT' : isAuth ? 'AUTHORIZED GUARD' : 'VISITOR';
+      const labelText = `[ ${name} • ${conf}% ] [ ${roleText} ]`;
+
+      ctx.font = 'bold 11px monospace';
+      const textWidth = ctx.measureText(labelText).width;
+      const labelY = Math.max(22, y - 6);
+
+      ctx.fillStyle = isSuspect ? '#991B1B' : '#0F172A';
+      ctx.fillRect(x, labelY - 14, textWidth + 12, 18);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, labelY - 14, textWidth + 12, 18);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(labelText, x + 6, labelY);
+    });
+  };
 
   // Stop client webcam when component unmounts or selected camera changes
   useEffect(() => {
@@ -258,7 +357,11 @@ export default function LiveCamera({
           async (blob) => {
             try {
               if (blob) {
-                await ingestCameraFrame(cameraId, blob);
+                const res = await ingestCameraFrame(cameraId, blob);
+                if (res && Array.isArray(res.detections)) {
+                  setWebcamDetections(res.detections);
+                  drawWebcamAnnotations(res.detections);
+                }
               }
             } catch {
               // Ignore transient upload drops
@@ -537,7 +640,7 @@ export default function LiveCamera({
         {isOnline ? (
           <>
             {isWebcamActive ? (
-              <div className="relative w-full h-full flex items-center justify-center bg-slate-950">
+              <div className="relative w-full h-full flex items-center justify-center bg-slate-950 overflow-hidden">
                 <video
                   ref={(el) => {
                     localVideoRef.current = el;
@@ -549,7 +652,14 @@ export default function LiveCamera({
                   autoPlay
                   playsInline
                   muted
-                  className="w-full h-full object-contain select-none"
+                  style={{ filter: getOpticalFilterStyle(opticalMode) }}
+                  className="w-full h-full object-contain select-none transition-[filter] duration-300"
+                />
+
+                {/* Real-Time AI Detection & Tactical Bounding Box Overlay Canvas */}
+                <canvas
+                  ref={overlayCanvasRef}
+                  className="absolute inset-0 pointer-events-none z-10 w-full h-full"
                 />
 
                 {/* Tactical HUD Overlay for Active Client Camera */}
@@ -721,9 +831,10 @@ export default function LiveCamera({
               {detections.length} people • {vehicles.length} {vehicles.length === 1 ? 'vehicle' : 'vehicles'}
               {vehicles[0]?.plate_number ? ` [${vehicles[0].plate_number}] (STORED)` : ''}
             </span>
-          ) : detections.length > 0 ? (
+          ) : (isWebcamActive && webcamDetections.length > 0 ? webcamDetections : detections).length > 0 ? (
             <span className="font-bold text-gray-800">
-              {detections.length} {detections.length === 1 ? 'person' : 'people'} (
+              {(isWebcamActive && webcamDetections.length > 0 ? webcamDetections : detections).length}{' '}
+              {(isWebcamActive && webcamDetections.length > 0 ? webcamDetections : detections).length === 1 ? 'person' : 'people'} (
               {isAuthorized ? 'Authorized Guard' : hasSuspect ? 'Wanted Suspect' : 'Visitor'})
             </span>
           ) : (

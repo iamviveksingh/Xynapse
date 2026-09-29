@@ -166,6 +166,109 @@ class CameraManager:
         self.actual_backend = "Browser WebCam (Client Ingestion)"
         return True
 
+    def process_ingested_frame(self, frame: np.ndarray) -> dict:
+        """
+        Synchronously processes an ingested client frame through the full AI perception
+        pipeline (YOLOv8 + YuNet FRS + Tripwire + Optical Enhancement), updates internal
+        annotated buffers, and returns detections immediately for real-time client HUD rendering.
+        """
+        if frame is None or frame.size == 0:
+            return {
+                "status": "dropped",
+                "camera_id": self.camera_id,
+                "fps": self.current_fps,
+                "detections": [],
+                "vehicles": [],
+                "is_perimeter_breached": False,
+                "is_authorized": False,
+                "has_suspect": False
+            }
+
+        with self._raw_frame_lock:
+            self._latest_hardware_frame = frame
+            self._latest_hardware_frame_time = time.time()
+        self.status = "ONLINE"
+        self.actual_backend = "Browser WebCam (Client Ingestion)"
+        self.actual_width = frame.shape[1]
+        self.actual_height = frame.shape[0]
+
+        now = time.time()
+        effective_optical_mode = self.optical_mode
+        display_frame = self.optical_pipeline.process_frame(frame, effective_optical_mode)
+
+        detections = []
+        match_summary = {
+            "all_authorized": False,
+            "has_suspect": False,
+            "suspects": [],
+            "authorized_count": 0,
+            "unknown_count": 0
+        }
+
+        # Human detection (PERIMETER or UNIFIED mode)
+        if self.detection_active and self.surveillance_mode in ("PERIMETER", "UNIFIED"):
+            detections = self.detector.detect(display_frame)
+            if self.face_recognizer and len(detections) > 0:
+                match_summary = self.face_recognizer.process_frame_detections(display_frame, detections)
+
+        # Vehicle detection (CHECKPOST or UNIFIED mode)
+        vehicle_dets = []
+        if self.detection_active and self.vehicle_detector and self.surveillance_mode in ("CHECKPOST", "UNIFIED"):
+            vehicle_dets = self.vehicle_detector.detect(display_frame)
+
+        # Check virtual tripwire breaches
+        if self.tripwire_enabled and len(detections) > 0:
+            breach_detected, breach_dets = self.tripwire.check_violations(detections)
+            self.is_perimeter_breached = breach_detected
+            if breach_detected and self.alert_engine and (now - self._last_alert_time >= self.ALERT_COOLDOWN_SECONDS):
+                self._last_alert_time = now
+                self.alert_engine.trigger_perimeter_alert(
+                    camera_id=self.camera_id,
+                    frame=frame,
+                    detections=breach_dets,
+                    optical_mode=self.optical_mode
+                )
+        else:
+            self.is_perimeter_breached = False
+
+        # Visual annotations for MJPEG stream output
+        if self.surveillance_mode == "CHECKPOST":
+            annotated_frame = self.vehicle_detector.draw_annotations(display_frame, vehicle_dets) if self.vehicle_detector else display_frame
+        elif self.surveillance_mode == "UNIFIED":
+            annotated_frame = self.detector.draw_annotations(display_frame, detections)
+            if self.vehicle_detector and len(vehicle_dets) > 0:
+                annotated_frame = self.vehicle_detector.draw_annotations(annotated_frame, vehicle_dets)
+        else:
+            annotated_frame = self.detector.draw_annotations(display_frame, detections)
+
+        ret, jpeg = cv2.imencode(".jpg", annotated_frame, [int(cv2.IMWRITE_JPEG_QUALITY), 75])
+        if ret:
+            with self._lock:
+                self._latest_jpeg = jpeg.tobytes()
+                self._latest_raw_frame = frame
+                self._latest_annotated = annotated_frame
+                self.latest_detections = detections
+                self.latest_vehicles = vehicle_dets
+
+        auth_count = match_summary.get("authorized_count", 0)
+        unk_count = match_summary.get("unknown_count", 0)
+        susp_list = match_summary.get("suspects", [])
+        self.is_authorized = (auth_count > 0 and unk_count == 0 and len(susp_list) == 0)
+        self.has_suspect = match_summary.get("has_suspect", False)
+
+        return {
+            "status": "ok",
+            "camera_id": self.camera_id,
+            "fps": 20.0,
+            "detections": detections,
+            "vehicles": vehicle_dets,
+            "is_perimeter_breached": self.is_perimeter_breached,
+            "is_authorized": self.is_authorized,
+            "has_suspect": self.has_suspect,
+            "dwell_seconds": self.dwell_seconds
+        }
+
+
     def start(self) -> bool:
         """Starts background frame acquisition thread and ANPR worker thread."""
         with self._lock:

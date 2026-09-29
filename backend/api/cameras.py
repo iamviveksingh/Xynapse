@@ -539,13 +539,8 @@ async def ingest_camera_frame(
     if frame is None or frame.size == 0:
         raise HTTPException(status_code=400, detail="Invalid frame format")
 
-    success = cam.ingest_frame(frame)
-    return {
-        "status": "ok" if success else "dropped",
-        "camera_id": camera_id,
-        "fps": cam.current_fps,
-        "detections": len(cam.latest_detections)
-    }
+    result = cam.process_ingested_frame(frame)
+    return result
 
 @router.get("/{camera_id}/stream")
 def stream_camera(camera_id: str):
