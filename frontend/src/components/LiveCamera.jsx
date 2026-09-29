@@ -64,6 +64,16 @@ export default function LiveCamera({
     };
   }, [camera?.camera_id]);
 
+  // Attach and play stream when isWebcamActive turns true
+  useEffect(() => {
+    if (isWebcamActive && localVideoRef.current && mediaStreamRef.current) {
+      if (localVideoRef.current.srcObject !== mediaStreamRef.current) {
+        localVideoRef.current.srcObject = mediaStreamRef.current;
+      }
+      localVideoRef.current.play().catch(() => {});
+    }
+  }, [isWebcamActive]);
+
   // When camera selection changes, reset mode state and auth error
   useEffect(() => {
     setLocalSurveillanceMode(null);
@@ -231,21 +241,35 @@ export default function LiveCamera({
       canvas.height = 480;
       const ctx = canvas.getContext('2d');
 
-      // Ingest live frames from browser webcam to backend perception engine @ ~10 FPS
+      // Ingest live frames from browser webcam to backend perception engine @ ~8-10 FPS
+      let isPosting = false;
       ingestTimerRef.current = setInterval(() => {
         const video = localVideoRef.current;
-        if (!video || video.readyState < 2) return;
-        ctx.drawImage(video, 0, 0, 640, 480);
+        if (!video || video.readyState < 2 || isPosting) return;
+        const w = video.videoWidth || 640;
+        const h = video.videoHeight || 480;
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+        ctx.drawImage(video, 0, 0, w, h);
+        isPosting = true;
         canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              ingestCameraFrame(cameraId, blob).catch(() => {});
+          async (blob) => {
+            try {
+              if (blob) {
+                await ingestCameraFrame(cameraId, blob);
+              }
+            } catch {
+              // Ignore transient upload drops
+            } finally {
+              isPosting = false;
             }
           },
           'image/jpeg',
           0.65
         );
-      }, 100);
+      }, 120);
     } catch (err) {
       console.error('[WebCam] Access error:', err);
       setWebcamError(err.message || 'Unable to access device webcam. Please grant browser camera permission.');
@@ -491,8 +515,7 @@ export default function LiveCamera({
             </div>
           </div>
 
-        {/* Hidden video and canvas for capturing client webcam frames */}
-        <video ref={localVideoRef} playsInline muted className="hidden" />
+        {/* Offscreen canvas for capturing client webcam frames to send to cloud AI */}
         <canvas ref={localCanvasRef} className="hidden" />
 
         {/* WebCam Error Notification */}
@@ -513,30 +536,70 @@ export default function LiveCamera({
 
         {isOnline ? (
           <>
-            <img
-              key={`${cameraId}-${refreshKey}`}
-              src={streamSrc}
-              alt="Live Camera Feed"
-              className="w-full h-full object-contain select-none pointer-events-none"
-            />
-            {/* Quick WebCam Stream Activator Pill when WebCam is idle */}
-            {!isWebcamActive && (
-              <button
-                onClick={handleToggleWebcam}
-                className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center space-x-2.5 px-6 py-2.5 rounded-full bg-emerald-600/95 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-2xl border border-emerald-400/50 backdrop-blur-xl transition-all transform hover:scale-105 active:scale-95 animate-pulse"
-                title="Connect your laptop or mobile camera directly to this tactical feed"
-              >
-                <Video className="w-4 h-4" />
-                <span>📷 Connect Laptop / Device WebCam</span>
-              </button>
-            )}
+            {isWebcamActive ? (
+              <div className="relative w-full h-full flex items-center justify-center bg-slate-950">
+                <video
+                  ref={(el) => {
+                    localVideoRef.current = el;
+                    if (el && mediaStreamRef.current && el.srcObject !== mediaStreamRef.current) {
+                      el.srcObject = mediaStreamRef.current;
+                      el.play().catch(() => {});
+                    }
+                  }}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-contain select-none"
+                />
 
-            {/* Active WebCam Ingestion Indicator Badge */}
-            {isWebcamActive && (
-              <div className="absolute top-4 left-6 z-20 flex items-center space-x-2 bg-emerald-500/90 backdrop-blur-md text-white text-[11px] font-bold px-3.5 py-1 rounded-full border border-emerald-400 shadow-md">
-                <span className="w-2 h-2 rounded-full bg-white animate-ping" />
-                <span>Device WebCam Active • Live Ingestion</span>
+                {/* Tactical HUD Overlay for Active Client Camera */}
+                <div className="absolute top-4 left-6 z-20 flex items-center space-x-2 bg-emerald-500/90 backdrop-blur-md text-white text-[11px] font-bold px-3.5 py-1 rounded-full border border-emerald-400 shadow-md">
+                  <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                  <span>Device WebCam Active • Live Ingestion</span>
+                </div>
+
+                {/* Tactical Disconnect Button */}
+                <button
+                  onClick={handleToggleWebcam}
+                  className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center space-x-2 px-5 py-2 rounded-full bg-rose-600/95 hover:bg-rose-500 text-white font-extrabold text-xs shadow-2xl border border-rose-400/50 backdrop-blur-xl transition-all transform hover:scale-105 active:scale-95"
+                  title="Disconnect laptop camera and revert to radar surveillance feed"
+                >
+                  <VideoOff className="w-4 h-4" />
+                  <span>Disconnect WebCam</span>
+                </button>
+
+                {/* Border Tripwire Overlay on Client Video */}
+                {tripwireEnabled && (
+                  <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-center">
+                    <div
+                      className="absolute left-0 right-0 border-b-2 border-dashed border-sky-400 shadow-[0_0_12px_rgba(56,189,248,0.9)]"
+                      style={{ top: `${(camera?.tripwire_y_ratio || 0.65) * 100}%` }}
+                    >
+                      <span className="absolute right-4 -top-5 px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-500/90 text-white backdrop-blur-md">
+                        BORDER TRIPWIRE ACTIVE
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
+            ) : (
+              <>
+                <img
+                  key={`${cameraId}-${refreshKey}`}
+                  src={streamSrc}
+                  alt="Live Camera Feed"
+                  className="w-full h-full object-contain select-none pointer-events-none"
+                />
+                {/* Quick WebCam Stream Activator Pill when WebCam is idle */}
+                <button
+                  onClick={handleToggleWebcam}
+                  className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center space-x-2.5 px-6 py-2.5 rounded-full bg-emerald-600/95 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-2xl border border-emerald-400/50 backdrop-blur-xl transition-all transform hover:scale-105 active:scale-95 animate-pulse"
+                  title="Connect your laptop or mobile camera directly to this tactical feed"
+                >
+                  <Video className="w-4 h-4" />
+                  <span>📷 Connect Laptop / Device WebCam</span>
+                </button>
+              </>
             )}
           </>
         ) : (

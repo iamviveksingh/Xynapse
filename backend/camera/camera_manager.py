@@ -161,7 +161,6 @@ class CameraManager:
         with self._raw_frame_lock:
             self._latest_hardware_frame = frame
             self._latest_hardware_frame_time = time.time()
-        self._is_synthetic_feed = False
         self.status = "ONLINE"
         self.actual_backend = "Browser WebCam (Client Ingestion)"
         return True
