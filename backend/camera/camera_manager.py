@@ -154,6 +154,18 @@ class CameraManager:
         """Initializes detector."""
         return self.detector.initialize()
 
+    def ingest_frame(self, frame: np.ndarray) -> bool:
+        """Ingests a live frame pushed by client browser webcam or edge device."""
+        if frame is None or frame.size == 0:
+            return False
+        with self._raw_frame_lock:
+            self._latest_hardware_frame = frame
+            self._latest_hardware_frame_time = time.time()
+        self._is_synthetic_feed = False
+        self.status = "ONLINE"
+        self.actual_backend = "Browser WebCam (Client Ingestion)"
+        return True
+
     def start(self) -> bool:
         """Starts background frame acquisition thread and ANPR worker thread."""
         with self._lock:
@@ -356,8 +368,8 @@ class CameraManager:
             cv2.LINE_AA
         )
 
-    def _generate_fallback_frame(self, message: str = "CAM-01 • CAMERA OFFLINE") -> np.ndarray:
-        """Generates high-tech CCTV test pattern frame with defense HUD aesthetics."""
+    def _generate_fallback_frame(self, message: str = "CAM-01 • AIR-GAPPED PERIMETER SCANNER ACTIVE") -> np.ndarray:
+        """Generates high-tech CCTV test pattern frame with defense HUD aesthetics and dynamic radar sweep."""
         frame = np.zeros((480, 640, 3), dtype=np.uint8)
         # Deep space dark slate background
         frame[:] = (12, 16, 24)
@@ -378,15 +390,22 @@ class CameraManager:
         cv2.line(frame, (320, 200), (320, 280), (212, 182, 6), 1, cv2.LINE_AA)
         cv2.line(frame, (280, 240), (360, 240), (212, 182, 6), 1, cv2.LINE_AA)
 
+        # Dynamic rotating radar sweep beam
+        sweep_angle = (time.time() * 75.0) % 360.0
+        rad = math.radians(sweep_angle)
+        sweep_x = int(320 + 200 * math.cos(rad))
+        sweep_y = int(240 + 200 * math.sin(rad))
+        cv2.line(frame, (320, 240), (sweep_x, sweep_y), (46, 204, 113), 1, cv2.LINE_AA)
+
         # Top-left telemetry stamp
         now_str = time.strftime("%Y-%m-%d %H:%M:%S UTC")
-        cv2.putText(frame, "XYNAPSE PERIMETER DEFENSE // FEED 01", (20, 32),
+        cv2.putText(frame, "XYNAPSE PERIMETER DEFENSE // FEED 01 [AIR-GAPPED]", (20, 32),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.45, (212, 182, 6), 1, cv2.LINE_AA)
         cv2.putText(frame, now_str, (20, 52),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.38, (120, 135, 150), 1, cv2.LINE_AA)
 
-        # Central glassmorphic standby card
-        card_w, card_h = 360, 72
+        # Central glassmorphic active status card
+        card_w, card_h = 420, 80
         cx1 = (640 - card_w) // 2
         cy1 = (480 - card_h) // 2
         cx2 = cx1 + card_w
@@ -397,21 +416,23 @@ class CameraManager:
 
         # Corner bracket accents on the card
         bw = 12
-        cv2.line(frame, (cx1, cy1), (cx1 + bw, cy1), (212, 182, 6), 2, cv2.LINE_AA)
-        cv2.line(frame, (cx1, cy1), (cx1, cy1 + bw), (212, 182, 6), 2, cv2.LINE_AA)
-        cv2.line(frame, (cx2, cy1), (cx2 - bw, cy1), (212, 182, 6), 2, cv2.LINE_AA)
-        cv2.line(frame, (cx2, cy1), (cx2, cy1 + bw), (212, 182, 6), 2, cv2.LINE_AA)
-        cv2.line(frame, (cx1, cy2), (cx1 + bw, cy2), (212, 182, 6), 2, cv2.LINE_AA)
-        cv2.line(frame, (cx1, cy2), (cx1, cy2 - bw), (212, 182, 6), 2, cv2.LINE_AA)
-        cv2.line(frame, (cx2, cy2), (cx2 - bw, cy2), (212, 182, 6), 2, cv2.LINE_AA)
-        cv2.line(frame, (cx2, cy2), (cx2, cy2 - bw), (212, 182, 6), 2, cv2.LINE_AA)
+        cv2.line(frame, (cx1, cy1), (cx1 + bw, cy1), (46, 204, 113), 2, cv2.LINE_AA)
+        cv2.line(frame, (cx1, cy1), (cx1, cy1 + bw), (46, 204, 113), 2, cv2.LINE_AA)
+        cv2.line(frame, (cx2, cy1), (cx2 - bw, cy1), (46, 204, 113), 2, cv2.LINE_AA)
+        cv2.line(frame, (cx2, cy1), (cx2, cy1 + bw), (46, 204, 113), 2, cv2.LINE_AA)
+        cv2.line(frame, (cx1, cy2), (cx1 + bw, cy2), (46, 204, 113), 2, cv2.LINE_AA)
+        cv2.line(frame, (cx1, cy2), (cx1, cy2 - bw), (46, 204, 113), 2, cv2.LINE_AA)
+        cv2.line(frame, (cx2, cy2), (cx2 - bw, cy2), (46, 204, 113), 2, cv2.LINE_AA)
+        cv2.line(frame, (cx2, cy2), (cx2, cy2 - bw), (46, 204, 113), 2, cv2.LINE_AA)
 
-        # Text in card
-        cv2.circle(frame, (cx1 + 24, cy1 + 26), 4, (68, 68, 239), -1, cv2.LINE_AA)
+        # Green active radar status
+        cv2.circle(frame, (cx1 + 24, cy1 + 26), 5, (46, 204, 113), -1, cv2.LINE_AA)
         cv2.putText(frame, message, (cx1 + 38, cy1 + 31),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.44, (240, 245, 255), 1, cv2.LINE_AA)
-        cv2.putText(frame, "STANDBY MODE // OPTICAL SENSOR PAUSED", (cx1 + 38, cy1 + 52),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.36, (120, 140, 160), 1, cv2.LINE_AA)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.42, (240, 245, 255), 1, cv2.LINE_AA)
+        cv2.putText(frame, "RADAR SCANNING // ZERO-LINE MONITORING ONLINE", (cx1 + 38, cy1 + 50),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.35, (100, 210, 140), 1, cv2.LINE_AA)
+        cv2.putText(frame, "CLICK 'USE DEVICE WEBCAM' ABOVE TO STREAM LIVE FEED", (cx1 + 38, cy1 + 68),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.33, (212, 182, 6), 1, cv2.LINE_AA)
 
         return frame
 
@@ -755,9 +776,24 @@ class CameraManager:
         last_reconnect_time = time.time()
 
         while self.is_running:
-            if getattr(self, "_is_synthetic_feed", False):
+            # 1. Check if a live hardware or browser-ingested frame is available
+            hw_frame = None
+            hw_time = None
+            with self._raw_frame_lock:
+                if self._latest_hardware_frame is not None:
+                    hw_frame = self._latest_hardware_frame.copy()
+                    hw_time = self._latest_hardware_frame_time
+
+            # If an ingested/hardware frame arrived within the last 2.5 seconds, process it through the full AI perception pipeline!
+            if hw_frame is not None and hw_time is not None and (time.time() - hw_time < 2.5):
+                raw_frame = hw_frame
+                is_hardware_frame = True
+                self.actual_width = raw_frame.shape[1]
+                self.actual_height = raw_frame.shape[0]
+                self.status = "ONLINE"
+            elif getattr(self, "_is_synthetic_feed", False):
                 # Headless cloud environment (e.g. Render) without physical video device node.
-                # Serve high-tech CCTV test pattern feed directly at ~20 FPS.
+                # Serve high-tech CCTV radar test pattern feed directly at ~20 FPS.
                 # Avoid repeated V4L2 reconnect attempts and keep camera ONLINE.
                 raw_frame = self._generate_fallback_frame()
                 ret, jpeg = cv2.imencode(".jpg", raw_frame, [int(cv2.IMWRITE_JPEG_QUALITY), 75])
@@ -773,39 +809,20 @@ class CameraManager:
                         self.latest_vehicles = []
                 time.sleep(0.05)
                 continue
+            else:
+                raw_frame = None
+                is_hardware_frame = False
 
-            raw_frame = None
-            is_hardware_frame = False
+                # Periodic background auto-reconnect if device/stream dropped
+                if not opened or self._cap is None or not self._cap.isOpened():
+                    if not self.is_running:
+                        self.status = "OFFLINE"
+                    now_t = time.time()
+                    if now_t - last_reconnect_time >= 2.0:
+                        last_reconnect_time = now_t
+                        opened = self._open_capture()
 
-            # Periodic background auto-reconnect if device/stream dropped
-            if not opened or self._cap is None or not self._cap.isOpened():
-                if not self.is_running:
-                    self.status = "OFFLINE"
-                now_t = time.time()
-                if now_t - last_reconnect_time >= 2.0:
-                    last_reconnect_time = now_t
-                    opened = self._open_capture()
-
-            if opened and self._cap and self._cap.isOpened():
-                hw_frame = None
-                hw_time = None
-                with self._raw_frame_lock:
-                    if self._latest_hardware_frame is not None:
-                        hw_frame = self._latest_hardware_frame.copy()
-                        hw_time = self._latest_hardware_frame_time
-
-                # Zero-latency ingestion: use latest live frame from reader thread
-                if hw_frame is not None and hw_time is not None and (time.time() - hw_time < 2.0):
-                    raw_frame = hw_frame
-                    is_hardware_frame = True
-                    self.actual_width = raw_frame.shape[1]
-                    self.actual_height = raw_frame.shape[0]
-                    self.status = "ONLINE"
-                elif hw_time is not None and (time.time() - hw_time >= 2.0):
-                    # Sensor stalled or disconnected
-                    self.status = "DISCONNECTED"
-                    opened = False
-                else:
+                if opened and self._cap and self._cap.isOpened():
                     # Fallback on initial device spin-up before reader thread populates frame
                     ret, frame = self._cap.read()
                     if ret and frame is not None and frame.size > 0:

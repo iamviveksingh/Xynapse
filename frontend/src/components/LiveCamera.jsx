@@ -11,7 +11,9 @@ import {
   Crosshair,
   Truck,
   Eye,
-  Radio
+  Radio,
+  Video,
+  VideoOff
 } from 'lucide-react';
 import {
   startCamera,
@@ -19,6 +21,7 @@ import {
   toggleTripwire,
   setOpticalMode,
   setSurveillanceMode,
+  ingestCameraFrame,
   getAuthenticatedMediaUrl
 } from '../services/api';
 
@@ -38,6 +41,28 @@ export default function LiveCamera({
   // Optimistic local state for instant mode-switch feedback
   const [localSurveillanceMode, setLocalSurveillanceMode] = useState(null);
   const [localOpticalMode, setLocalOpticalMode] = useState(null);
+
+  // Client WebCam Ingestion states (streams user's laptop/mobile camera to cloud AI)
+  const [isWebcamActive, setIsWebcamActive] = useState(false);
+  const [webcamError, setWebcamError] = useState(null);
+  const localVideoRef = useRef(null);
+  const localCanvasRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const ingestTimerRef = useRef(null);
+
+  // Stop client webcam when component unmounts or selected camera changes
+  useEffect(() => {
+    return () => {
+      if (ingestTimerRef.current) {
+        clearInterval(ingestTimerRef.current);
+        ingestTimerRef.current = null;
+      }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+        mediaStreamRef.current = null;
+      }
+    };
+  }, [camera?.camera_id]);
 
   // When camera selection changes, reset mode state and auth error
   useEffect(() => {
@@ -170,6 +195,63 @@ export default function LiveCamera({
     setRefreshKey((k) => k + 1);
   };
 
+  const handleToggleWebcam = async () => {
+    if (isWebcamActive) {
+      if (ingestTimerRef.current) {
+        clearInterval(ingestTimerRef.current);
+        ingestTimerRef.current = null;
+      }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+        mediaStreamRef.current = null;
+      }
+      setIsWebcamActive(false);
+      setRefreshKey((k) => k + 1);
+      return;
+    }
+
+    setWebcamError(null);
+    try {
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        throw new Error('WebCam access is not supported by your browser or requires HTTPS.');
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false
+      });
+      mediaStreamRef.current = stream;
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+        await localVideoRef.current.play().catch(() => {});
+      }
+      setIsWebcamActive(true);
+
+      const canvas = localCanvasRef.current || document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 480;
+      const ctx = canvas.getContext('2d');
+
+      // Ingest live frames from browser webcam to backend perception engine @ ~10 FPS
+      ingestTimerRef.current = setInterval(() => {
+        const video = localVideoRef.current;
+        if (!video || video.readyState < 2) return;
+        ctx.drawImage(video, 0, 0, 640, 480);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              ingestCameraFrame(cameraId, blob).catch(() => {});
+            }
+          },
+          'image/jpeg',
+          0.65
+        );
+      }, 100);
+    } catch (err) {
+      console.error('[WebCam] Access error:', err);
+      setWebcamError(err.message || 'Unable to access device webcam. Please grant browser camera permission.');
+    }
+  };
+
   const handleFullscreen = () => {
     if (containerRef.current) {
       if (!document.fullscreenElement) {
@@ -287,6 +369,29 @@ export default function LiveCamera({
               <span>{tripwireEnabled ? 'Tripwire: ON' : 'Tripwire: OFF'}</span>
             </button>
 
+            {/* Device WebCam Stream Ingestion */}
+            <button
+              onClick={handleToggleWebcam}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all flex items-center space-x-1.5 shadow-xs ${
+                isWebcamActive
+                  ? 'bg-emerald-500 text-white border-emerald-600 font-bold radar-beacon'
+                  : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300'
+              }`}
+              title={isWebcamActive ? 'Disconnect Device WebCam' : 'Stream your device/laptop camera directly into this tactical feed'}
+            >
+              {isWebcamActive ? (
+                <>
+                  <VideoOff className="w-3.5 h-3.5" />
+                  <span>WebCam Active</span>
+                </>
+              ) : (
+                <>
+                  <Video className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Use Device WebCam</span>
+                </>
+              )}
+            </button>
+
             {/* Camera Power Toggle */}
             <button
               onClick={handleToggleCamera}
@@ -386,13 +491,54 @@ export default function LiveCamera({
             </div>
           </div>
 
+        {/* Hidden video and canvas for capturing client webcam frames */}
+        <video ref={localVideoRef} playsInline muted className="hidden" />
+        <canvas ref={localCanvasRef} className="hidden" />
+
+        {/* WebCam Error Notification */}
+        {webcamError && (
+          <div className="absolute top-16 left-6 right-6 bg-rose-600/90 backdrop-blur-xl text-white px-5 py-3 rounded-2xl flex items-center justify-between text-xs font-semibold shadow-2xl border border-rose-400/40 z-30 animate-fadeIn">
+            <div className="flex items-center space-x-2.5">
+              <AlertTriangle className="w-4 h-4 text-white" />
+              <span>{webcamError}</span>
+            </div>
+            <button
+              onClick={() => setWebcamError(null)}
+              className="text-white/80 hover:text-white text-sm font-bold ml-3"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {isOnline ? (
-          <img
-            key={`${cameraId}-${refreshKey}`}
-            src={streamSrc}
-            alt="Live Camera Feed"
-            className="w-full h-full object-contain select-none pointer-events-none"
-          />
+          <>
+            <img
+              key={`${cameraId}-${refreshKey}`}
+              src={streamSrc}
+              alt="Live Camera Feed"
+              className="w-full h-full object-contain select-none pointer-events-none"
+            />
+            {/* Quick WebCam Stream Activator Pill when WebCam is idle */}
+            {!isWebcamActive && (
+              <button
+                onClick={handleToggleWebcam}
+                className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center space-x-2.5 px-6 py-2.5 rounded-full bg-emerald-600/95 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-2xl border border-emerald-400/50 backdrop-blur-xl transition-all transform hover:scale-105 active:scale-95 animate-pulse"
+                title="Connect your laptop or mobile camera directly to this tactical feed"
+              >
+                <Video className="w-4 h-4" />
+                <span>📷 Connect Laptop / Device WebCam</span>
+              </button>
+            )}
+
+            {/* Active WebCam Ingestion Indicator Badge */}
+            {isWebcamActive && (
+              <div className="absolute top-4 left-6 z-20 flex items-center space-x-2 bg-emerald-500/90 backdrop-blur-md text-white text-[11px] font-bold px-3.5 py-1 rounded-full border border-emerald-400 shadow-md">
+                <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                <span>Device WebCam Active • Live Ingestion</span>
+              </div>
+            )}
+          </>
         ) : (
           <div className="flex flex-col items-center justify-center p-10 text-center space-y-4">
             <div className="w-16 h-16 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center text-white/50 shadow-inner">

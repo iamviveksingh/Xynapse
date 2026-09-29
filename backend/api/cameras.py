@@ -1,8 +1,9 @@
 import os
 import time
 import cv2
+import numpy as np
 from typing import Dict, List, Optional
-from fastapi import APIRouter, HTTPException, Response, Depends
+from fastapi import APIRouter, HTTPException, Response, Depends, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -505,6 +506,46 @@ def stop_camera(camera_id: str, _admin: str = Depends(require_admin)) -> dict:
         db.close()
 
     return {"status": "stopped", "camera": cam.get_status_dict()}
+
+@router.post("/{camera_id}/ingest-frame")
+async def ingest_camera_frame(
+    camera_id: str,
+    request: Request,
+    _operator: str = Depends(require_operator)
+) -> dict:
+    """Ingests a real-time frame pushed from a client browser webcam or edge probe."""
+    get_or_create_default_camera()
+    if camera_id not in camera_registry:
+        raise HTTPException(status_code=404, detail="Camera not found")
+    cam = camera_registry[camera_id]
+    if not cam.is_running:
+        cam.start()
+
+    content_type = request.headers.get("content-type", "")
+    if "multipart/form-data" in content_type:
+        form = await request.form()
+        file_obj = form.get("file")
+        if file_obj is None:
+            raise HTTPException(status_code=400, detail="Missing file in form data")
+        contents = await file_obj.read()
+    else:
+        contents = await request.body()
+
+    if not contents:
+        raise HTTPException(status_code=400, detail="Empty frame payload")
+
+    nparr = np.frombuffer(contents, np.uint8)
+    frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    if frame is None or frame.size == 0:
+        raise HTTPException(status_code=400, detail="Invalid frame format")
+
+    success = cam.ingest_frame(frame)
+    return {
+        "status": "ok" if success else "dropped",
+        "camera_id": camera_id,
+        "fps": cam.current_fps,
+        "detections": len(cam.latest_detections)
+    }
 
 @router.get("/{camera_id}/stream")
 def stream_camera(camera_id: str):

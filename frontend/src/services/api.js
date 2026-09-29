@@ -368,6 +368,15 @@ export async function updateCameraSource(cameraId, source, name = null) {
   return handleApiResponse(res, 'Failed to update camera source');
 }
 
+export async function ingestCameraFrame(cameraId, frameBlob) {
+  const res = await authFetch(`${API_BASE}/cameras/${cameraId}/ingest-frame`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'image/jpeg' },
+    body: frameBlob
+  });
+  return handleApiResponse(res, 'Failed to ingest camera frame');
+}
+
 // Edge AI Telemetry & Resource Profiling APIs
 export async function fetchEdgeTelemetry() {
   const res = await authFetch(`${API_BASE}/health/edge-telemetry`);
