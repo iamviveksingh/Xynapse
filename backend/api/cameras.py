@@ -28,6 +28,8 @@ face_recognizer = FaceRecognizer()
 
 # Camera runtime registry (holds active CameraManager threads)
 camera_registry: Dict[str, CameraManager] = {}
+import threading
+_camera_system_lock = threading.Lock()
 
 import urllib.parse
 
@@ -183,41 +185,42 @@ def init_camera_system() -> None:
         db.close()
 
 def get_or_create_default_camera() -> CameraManager:
-    if not camera_registry:
-        init_camera_system()
+    with _camera_system_lock:
+        if not camera_registry:
+            init_camera_system()
 
-    if settings.DEFAULT_CAMERA_ID not in camera_registry:
-        # Create and persist default primary camera
-        db = SessionLocal()
-        try:
-            cfg = db.query(CameraConfig).filter(CameraConfig.camera_id == settings.DEFAULT_CAMERA_ID).first()
-            if not cfg:
-                cfg = CameraConfig(
-                    camera_id=settings.DEFAULT_CAMERA_ID,
-                    name=settings.DEFAULT_CAMERA_NAME,
-                    source=settings.CAMERA_SOURCE,
-                    surveillance_mode="PERIMETER",
-                    optical_mode="STANDARD",
-                    location="Fence Zero-Line Sector 4",
-                    tripwire_enabled=1,
-                    is_enabled=1
-                )
-                db.add(cfg)
-                db.commit()
-        finally:
-            db.close()
+        if settings.DEFAULT_CAMERA_ID not in camera_registry:
+            # Create and persist default primary camera
+            db = SessionLocal()
+            try:
+                cfg = db.query(CameraConfig).filter(CameraConfig.camera_id == settings.DEFAULT_CAMERA_ID).first()
+                if not cfg:
+                    cfg = CameraConfig(
+                        camera_id=settings.DEFAULT_CAMERA_ID,
+                        name=settings.DEFAULT_CAMERA_NAME,
+                        source=settings.CAMERA_SOURCE,
+                        surveillance_mode="PERIMETER",
+                        optical_mode="STANDARD",
+                        location="Fence Zero-Line Sector 4",
+                        tripwire_enabled=1,
+                        is_enabled=1
+                    )
+                    db.add(cfg)
+                    db.commit()
+            finally:
+                db.close()
 
-        cam = CameraManager(
-            camera_id=settings.DEFAULT_CAMERA_ID,
-            name=settings.DEFAULT_CAMERA_NAME,
-            source=settings.CAMERA_SOURCE,
-            alert_engine=alert_engine,
-            face_recognizer=face_recognizer
-        )
-        cam.start()
-        camera_registry[settings.DEFAULT_CAMERA_ID] = cam
+            cam = CameraManager(
+                camera_id=settings.DEFAULT_CAMERA_ID,
+                name=settings.DEFAULT_CAMERA_NAME,
+                source=settings.CAMERA_SOURCE,
+                alert_engine=alert_engine,
+                face_recognizer=face_recognizer
+            )
+            cam.start()
+            camera_registry[settings.DEFAULT_CAMERA_ID] = cam
 
-    return camera_registry[settings.DEFAULT_CAMERA_ID]
+        return camera_registry[settings.DEFAULT_CAMERA_ID]
 
 _device_scan_cache = {"time": 0.0, "devices": []}
 

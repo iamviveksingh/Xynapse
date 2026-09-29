@@ -4,32 +4,38 @@ import numpy as np
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 
+import threading
+
 from backend.database.database import SessionLocal
 from backend.database.models import VehicleProfile
 
 
 _shared_ocr_engine = None
+_ocr_singleton_lock = threading.Lock()
 
 def get_shared_ocr_engine():
     """Singleton getter for OCR engine to prevent loading multiple 150MB+ models in cloud RAM."""
     global _shared_ocr_engine
     if _shared_ocr_engine is not None:
         return _shared_ocr_engine
-    try:
-        from rapidocr_onnxruntime import RapidOCR
-        _shared_ocr_engine = RapidOCR()
-        print("[ModelCache] Loaded Shared RapidOCR ONNX engine into singleton.")
-        return _shared_ocr_engine
-    except Exception as e:
-        print(f"[ANPREngine] Failed to initialize RapidOCR: {e}")
-        try:
-            import easyocr
-            _shared_ocr_engine = easyocr.Reader(['en'], gpu=False)
-            print("[ModelCache] Loaded Shared EasyOCR fallback into singleton.")
+    with _ocr_singleton_lock:
+        if _shared_ocr_engine is not None:
             return _shared_ocr_engine
-        except Exception as ex2:
-            print(f"[ANPREngine] OCR fallback also failed: {ex2}")
-            return None
+        try:
+            from rapidocr_onnxruntime import RapidOCR
+            _shared_ocr_engine = RapidOCR()
+            print("[ModelCache] Loaded Shared RapidOCR ONNX engine into singleton.")
+            return _shared_ocr_engine
+        except Exception as e:
+            print(f"[ANPREngine] Failed to initialize RapidOCR: {e}")
+            try:
+                import easyocr
+                _shared_ocr_engine = easyocr.Reader(['en'], gpu=False)
+                print("[ModelCache] Loaded Shared EasyOCR fallback into singleton.")
+                return _shared_ocr_engine
+            except Exception as ex2:
+                print(f"[ANPREngine] OCR fallback also failed: {ex2}")
+                return None
 
 class ANPREngine:
     """
@@ -49,6 +55,8 @@ class ANPREngine:
 
     def initialize(self) -> bool:
         """Initializes RapidOCR ONNX engine and loads vehicle profiles."""
+        if self._is_initialized and self.ocr_engine is not None:
+            return True
         engine = get_shared_ocr_engine()
         if engine is not None:
             self.ocr_engine = engine

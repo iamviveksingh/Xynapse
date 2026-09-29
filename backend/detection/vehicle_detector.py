@@ -28,6 +28,8 @@ class VehicleDetector(BaseDetector):
 
     def initialize(self) -> bool:
         """Loads YOLOv8 model reusing shared cached singleton."""
+        if self._is_initialized and self.model is not None:
+            return True
         try:
             from backend.detection.person_detector import get_shared_yolo_model
             shared_m = get_shared_yolo_model(self.model_path)

@@ -20,6 +20,8 @@ class FaceDetector(BaseDetector):
         self._is_initialized = False
 
     def initialize(self) -> bool:
+        if self._is_initialized and (self.yunet is not None or self.cascade is not None):
+            return True
         # 1. Try loading YuNet Deep Learning Model
         script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         model_paths = [
