@@ -51,7 +51,7 @@ class ANPREngine:
         self.ocr_engine = None
         self._is_initialized = False
         self._profiles: List[Dict[str, Any]] = []
-        self.initialize()
+        self.reload_profiles()
 
     def initialize(self) -> bool:
         """Initializes RapidOCR ONNX engine and loads vehicle profiles."""
@@ -215,7 +215,19 @@ class ANPREngine:
         - crop_h: candidate crop height
         - category: e.g. "STANDARD_INDIAN", "BHARAT_SERIES", "MILITARY_FLEET", etc.
         """
-        if not self._is_initialized or self.ocr_engine is None or crop is None or getattr(crop, "size", 0) == 0:
+        if not self._is_initialized or self.ocr_engine is None:
+            if not self.initialize():
+                return {
+                    "plate": None,
+                    "raw_text": "",
+                    "confidence": 0.0,
+                    "status": "UNREADABLE",
+                    "crop_w": 0,
+                    "crop_h": 0,
+                    "category": None
+                }
+
+        if crop is None or getattr(crop, "size", 0) == 0:
             return {
                 "plate": None,
                 "raw_text": "",
@@ -583,6 +595,9 @@ class ANPREngine:
         4. Falls back to bumper ROI and full vehicle crop if needed.
         5. Validates and matches plate against database watchlist.
         """
+        if not self._is_initialized:
+            self.initialize()
+
         if not self._is_initialized or frame is None or len(vehicle_detections) == 0:
             return vehicle_detections
 

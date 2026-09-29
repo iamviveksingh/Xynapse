@@ -327,7 +327,7 @@ class PersonDetector(BaseDetector):
                         classes=PERCEPTION_CLASSES,
                         conf=self.min_confidence,
                         verbose=False,
-                        imgsz=320             # Highly optimized for 25-30+ FPS CPU throughput
+                        imgsz=416             # Matches yolov8n.onnx static input [1, 3, 416, 416]
                     )
 
                 if results and len(results) > 0:
